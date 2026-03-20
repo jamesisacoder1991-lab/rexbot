@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rexbot Command Deck</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="grid-bg"></div>
+    <main class="shell">
+      <header class="hero panel">
+        <div>
+          <p class="eyebrow">REXBOT // COMMAND DECK</p>
+          <h1>Neon control surface for your local Llama 3 agent.</h1>
+          <p class="subcopy">
+            Inspect capabilities, run tools, and talk to Rexbot through a lightweight built-in dashboard.
+          </p>
+        </div>
+        <div class="status-pills">
+          <span class="pill">OLLAMA READY*</span>
+          <span class="pill">LOCAL ONLY</span>
+          <span class="pill">AUDITED</span>
+        </div>
+      </header>
+
+      <section class="panel stats">
+        <div>
+          <span class="label">Platform</span>
+          <strong id="platformValue">—</strong>
+        </div>
+        <div>
+          <span class="label">Python</span>
+          <strong id="pythonValue">—</strong>
+        </div>
+        <div>
+          <span class="label">CPU</span>
+          <strong id="cpuValue">—</strong>
+        </div>
+        <div>
+          <span class="label">Memory MB</span>
+          <strong id="memoryValue">—</strong>
+        </div>
+      </section>
+
+      <section class="columns">
+        <section class="panel column">
+          <div class="panel-head">
+            <h2>Roadmap manifest</h2>
+            <button id="refreshManifest">Refresh</button>
+          </div>
+          <div id="manifestGrid" class="manifest-grid"></div>
+        </section>
+
+        <section class="panel column">
+          <div class="panel-head">
+            <h2>Chat console</h2>
+            <button id="resetChat">Reset</button>
+          </div>
+          <div id="chatLog" class="chat-log"></div>
+          <form id="chatForm" class="stacked-form">
+            <textarea id="chatInput" placeholder="Ask Rexbot to inspect, organize, summarize, search, or plan..."></textarea>
+            <button type="submit">Send to Rexbot</button>
+          </form>
+        </section>
+
+        <section class="panel column">
+          <div class="panel-head">
+            <h2>Tool runner</h2>
+            <button id="refreshTools">Reload</button>
+          </div>
+          <form id="toolForm" class="stacked-form">
+            <label>
+              Tool
+              <select id="toolSelect"></select>
+            </label>
+            <label>
+              Arguments JSON
+              <textarea id="toolArgs" placeholder='{"path":"./README"}'></textarea>
+            </label>
+            <button type="submit">Execute tool</button>
+          </form>
+          <pre id="toolOutput" class="output"></pre>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

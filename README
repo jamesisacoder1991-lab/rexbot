@@ -1,1 +1,428 @@
+# rexbot
 
+`rexbot` is a local assistant prototype built around **Llama 3 via Ollama** plus a host-side tool layer.
+
+The basic idea is simple:
+
+1. **You ask for a task.**
+2. **Llama 3 decides what tool to use.**
+3. **Rexbot reviews that planned action with Llama 3 one more time.**
+4. **If the plan is confirmed, Rexbot runs the tool.**
+5. **The tool result goes back to Llama 3 so it can continue reasoning.**
+
+Rexbot is intentionally designed to stay:
+
+- **local-first**,
+- **auditable**,
+- **scoped to approved roots/domains**,
+- **lightweight**,
+- and **easy to run on lower-end hardware**.
+
+---
+
+## What this project includes
+
+### Core runtime pieces
+
+- **Llama 3 client** through an Ollama-compatible endpoint.
+- **Assistant controller** that manages tool execution, review flow, and audit logging.
+- **Safety policy** for scoped filesystem and network access.
+- **Tool runner** with file, search, memory, knowledge, and prototype roadmap tools.
+- **CLI** for chat mode and direct tool mode.
+- **Web dashboard** with a techy control-deck style interface.
+
+### Working features already included
+
+- file inspection and editing inside approved roots,
+- local file search and directory-tree views,
+- bounded web fetching for approved domains,
+- SQLite-backed long-term memory,
+- searchable local knowledge base indexing,
+- saved skills and reflections,
+- focus mode, persona state, reviewer mode, and task-session state,
+- roadmap manifest/status tools,
+- and iterative Llama 3 tool chaining.
+
+### Intentionally not included
+
+This prototype does **not** enable:
+
+- unrestricted PC takeover,
+- arbitrary code execution,
+- hidden background autonomy,
+- controller spoofing,
+- or game automation.
+
+Some of those ideas are represented as **prototypes/status tools** only so the roadmap is visible, but they are not turned on as real unsafe capabilities.
+
+---
+
+## How Rexbot works
+
+When Rexbot is used in chat mode, the flow is:
+
+1. User sends a request.
+2. Llama 3 proposes a tool call.
+3. Rexbot sends that planned tool action back to Llama 3 for a **confirmation pass**.
+4. If Llama 3 replies with **CONFIRM**, Rexbot executes the tool.
+5. If Llama 3 replies with **REJECT**, Rexbot does **not** execute the tool and lets Llama 3 revise the plan.
+6. Tool output is fed back into the conversation.
+
+This helps keep tool usage deliberate instead of immediately executing the first plan.
+
+---
+
+## Safety modes
+
+Rexbot has two main operating modes:
+
+### `SAFE`
+
+- File and network actions require explicit approval.
+- Good for cautious testing.
+
+### `SUPERVISED`
+
+- Repeated approval prompts are skipped.
+- File and network access are **still scoped**.
+- Requires the exact acknowledgement phrase:
+
+```text
+I understand supervised mode still keeps scope limits
+```
+
+Even in supervised mode, Rexbot still respects:
+
+- approved filesystem roots,
+- approved domains,
+- audit logs,
+- and the confirmation loop before execution.
+
+---
+
+## Full tool list
+
+Rexbot exposes these tools to Llama 3.
+
+### File and folder tools
+
+- `list_dir`
+- `read_file`
+- `write_file`
+- `append_file`
+- `make_dir`
+- `file_info`
+- `directory_tree`
+- `glob_search`
+- `grep_text`
+
+### Internet and system tools
+
+- `fetch_url`
+- `current_time`
+- `system_info`
+
+### Memory tools
+
+- `save_memory`
+- `search_memory`
+- `list_memories`
+
+### Knowledge-base tools
+
+- `add_knowledge`
+- `search_knowledge`
+- `list_knowledge`
+
+### Learning and self-improvement tools
+
+- `save_skill`
+- `search_skills`
+- `list_skills`
+- `log_reflection`
+- `list_reflections`
+
+### Personality and task-state tools
+
+- `set_focus_mode`
+- `get_focus_mode`
+- `set_personality_profile`
+- `get_personality_profile`
+- `set_emotion_state`
+- `get_emotion_state`
+- `start_task_session`
+- `get_task_session`
+- `set_reviewer_mode`
+- `get_reviewer_mode`
+
+### Roadmap / prototype status tools
+
+- `screen_vision_prototype`
+- `object_detection_prototype`
+- `pc_control_prototype`
+- `code_execution_prototype`
+- `game_controller_prototype`
+- `voice_personality_prototype`
+- `filesystem_intelligence_status`
+- `strategy_mode_status`
+- `autonomous_task_mode_status`
+- `multi_tool_chaining_status`
+- `self_improvement_status`
+- `dual_brain_status`
+- `insane_tool_manifest`
+
+---
+
+## Roadmap coverage for the requested “insane tool list”
+
+This repo tracks each item as one of:
+
+- **working**
+- **working partial**
+- **prototype only**
+- **disabled for safety**
+
+Current mapping:
+
+1. Screen Vision → `screen_vision_prototype`
+2. Object Detection → `object_detection_prototype`
+3. Long-Term Memory → working
+4. Skill Learning → working
+5. Full PC Control → `pc_control_prototype`
+6. File System Intelligence → working
+7. Code Execution Tool → `code_execution_prototype`
+8. Game Controller AI → `game_controller_prototype`
+9. Strategy Mode → working with Llama 3 planning
+10. Voice + Personality → `voice_personality_prototype` plus working persona-state tools
+11. Emotion Simulation → working
+12. Local Knowledge Base → working
+13. Autonomous Task Mode → working partial
+14. Multi-Tool Chaining → working
+15. Self-Improvement System → working partial
+16. Dual-Brain System → working partial
+17. Focus Mode → working
+
+Inspect the whole manifest directly:
+
+```bash
+python -m rexbot.cli tool insane_tool_manifest \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+---
+
+## Low-resource design choices
+
+To keep Rexbot usable on lower-end systems such as Raspberry Pi or older shared devices:
+
+- file reads are capped,
+- web fetches are capped,
+- tree/search tools enforce result limits,
+- memory and knowledge use SQLite,
+- the client exposes `--context-window`, `--max-tokens`, and `--temperature`,
+- and the current implementation stays **stdlib-only**.
+
+---
+
+## Setup
+
+### 1. Install Python
+
+Use **Python 3.10 or newer**.
+
+### 2. Install Ollama
+
+Rexbot expects an **Ollama-compatible** local endpoint by default.
+
+Official Ollama links:
+
+- Docs: https://docs.ollama.com/
+- Download / install: https://ollama.com/download
+- Llama 3.1 model page: https://ollama.com/library/llama3.1
+
+On Linux, Ollama’s download page currently shows:
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+On macOS or Windows, install Ollama from the official download page.
+
+### 3. Pull the model
+
+```bash
+ollama pull llama3.1
+```
+
+### 4. Start Ollama if needed
+
+```bash
+ollama serve
+```
+
+### 5. Rexbot Python dependencies
+
+There are currently **no extra Python dependencies** required for the current feature set.
+
+---
+
+## Quick start
+
+### CLI chat mode
+
+```bash
+python -m rexbot.cli chat \
+  --root . \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+### Lower-resource chat settings
+
+```bash
+python -m rexbot.cli chat \
+  --root . \
+  --context-window 2048 \
+  --max-tokens 256 \
+  --temperature 0.1
+```
+
+### Stop commands during chat
+
+- `/kill` stops immediately.
+- `/exit` or `/quit` ends the session cleanly.
+
+---
+
+## Web dashboard UI
+
+Rexbot includes a lightweight built-in web dashboard with a techy control-deck style UI.
+
+Start it with:
+
+```bash
+python -m rexbot.webapp \
+  --root . \
+  --supervised \
+  --enable-chat
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000
+```
+
+The dashboard includes:
+
+- a roadmap manifest panel,
+- a tool runner,
+- a chat console,
+- and system info/status cards.
+
+---
+
+## Direct tool mode examples
+
+### Write a file
+
+```bash
+python -m rexbot.cli tool write_file ./sandbox/output.txt \
+  --root ./sandbox \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits" \
+  --content "hello"
+```
+
+### Search text in a folder
+
+```bash
+python -m rexbot.cli tool grep_text ./workspace \
+  --arg pattern=todo \
+  --arg max_matches=10 \
+  --root ./workspace \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+### Save and search memory
+
+```bash
+python -m rexbot.cli tool save_memory \
+  --arg key=project_goal \
+  --arg content="Build a lightweight assistant" \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+
+python -m rexbot.cli tool search_memory \
+  --arg query=lightweight \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+### Add and search local knowledge
+
+```bash
+python -m rexbot.cli tool add_knowledge ./README \
+  --root . \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+
+python -m rexbot.cli tool search_knowledge \
+  --arg query=Ollama \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+### Save a skill and a reflection
+
+```bash
+python -m rexbot.cli tool save_skill \
+  --arg name=refactor_python \
+  --arg steps="inspect, patch, test" \
+  --arg outcome="clean commit" \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+
+python -m rexbot.cli tool log_reflection \
+  --arg task=refactor_python \
+  --arg reflection="Smaller bounded tools are safer and easier to debug" \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+### Inspect prototype roadmap tools
+
+```bash
+python -m rexbot.cli tool screen_vision_prototype \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+
+python -m rexbot.cli tool pc_control_prototype \
+  --supervised \
+  --ack "I understand supervised mode still keeps scope limits"
+```
+
+---
+
+## Project structure
+
+- `rexbot/assistant.py` → controller, audit log, approval flow, Llama 3 execution loop
+- `rexbot/llama3.py` → Ollama-compatible client and plan review helper
+- `rexbot/policy.py` → scoped policy engine for file/network/meta actions
+- `rexbot/tools.py` → tool runner, SQLite-backed memory store, tool registry
+- `rexbot/cli.py` → CLI entrypoints for chat/tool usage
+- `rexbot/webapp.py` → dashboard server and web API
+- `rexbot/ui/` → dashboard frontend assets
+- `tests/test_policy.py` → test coverage for controller, policy, tools, and dashboard service
+
+---
+
+## Tests
+
+Run the automated checks with:
+
+```bash
+python -m pytest
+```
