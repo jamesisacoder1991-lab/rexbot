@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rexbot</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <main class="app-shell">
+      <section class="hero-card panel">
+        <div class="hero-copy">
+          <p class="eyebrow">REXBOT // AUTO TOOL MODE</p>
+          <h1>Just ask. Rexbot picks the tools.</h1>
+          <p class="subcopy">
+            Use plain language like <strong>“organize my downloads”</strong> and Rexbot will choose the scoped tools,
+            review the plan, and show what it did.
+          </p>
+          <div class="hero-actions">
+            <button id="primaryExample" type="button">Organize my downloads</button>
+            <button id="refreshManifest" type="button" class="ghost">Refresh status</button>
+          </div>
+        </div>
+        <div class="hero-side">
+          <div class="mini-stat">
+            <span class="label">Platform</span>
+            <strong id="platformValue">—</strong>
+          </div>
+          <div class="mini-stat">
+            <span class="label">Python</span>
+            <strong id="pythonValue">—</strong>
+          </div>
+          <div class="mini-stat">
+            <span class="label">CPU</span>
+            <strong id="cpuValue">—</strong>
+          </div>
+          <div class="mini-stat">
+            <span class="label">Memory MB</span>
+            <strong id="memoryValue">—</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <section class="panel chat-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Natural language</p>
+              <h2>Ask Rexbot</h2>
+            </div>
+            <button id="resetChat" type="button" class="ghost">Reset</button>
+          </div>
+
+          <div id="chatHint" class="chat-hint">
+            Rexbot chat is loading…
+          </div>
+
+          <div id="promptChips" class="prompt-chips"></div>
+
+          <div id="chatLog" class="chat-log"></div>
+
+          <form id="chatForm" class="composer">
+            <textarea
+              id="chatInput"
+              placeholder="Try: Organize my downloads by file type"
+              aria-label="Chat with Rexbot"
+            ></textarea>
+            <div class="composer-actions">
+              <p class="helper-text">Rexbot will automatically choose tools when chat is enabled.</p>
+              <button type="submit">Send</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="sidebar-stack">
+          <section class="panel action-panel">
+            <div class="panel-head compact">
+              <div>
+                <p class="section-kicker">Auto-selected tools</p>
+                <h2>Recent actions</h2>
+              </div>
+            </div>
+            <div id="toolActivity" class="activity-list empty-state">
+              Ask Rexbot to see the tools it picks.
+            </div>
+          </section>
+
+          <section class="panel manifest-panel">
+            <div class="panel-head compact">
+              <div>
+                <p class="section-kicker">Capability status</p>
+                <h2>Manifest highlights</h2>
+              </div>
+            </div>
+            <div id="manifestGrid" class="manifest-grid"></div>
+          </section>
+
+          <details class="panel tool-panel">
+            <summary>
+              <div>
+                <p class="section-kicker">Advanced</p>
+                <h2>Manual tool runner</h2>
+              </div>
+              <span>Open</span>
+            </summary>
+            <form id="toolForm" class="stacked-form">
+              <label>
+                Tool
+                <select id="toolSelect"></select>
+              </label>
+              <label>
+                Arguments JSON
+                <textarea id="toolArgs" placeholder='{"path":"./README"}'></textarea>
+              </label>
+              <div class="tool-actions">
+                <button id="refreshTools" type="button" class="ghost">Reload tools</button>
+                <button type="submit">Run tool</button>
+              </div>
+            </form>
+            <pre id="toolOutput" class="output"></pre>
+          </details>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
