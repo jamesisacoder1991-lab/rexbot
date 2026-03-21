@@ -89,21 +89,6 @@ def test_controller_executes_supervised_write(tmp_path: Path) -> None:
     assert (tmp_path / "notes.txt").read_text() == "hello"
 
 
-def test_controller_blocks_move_when_destination_outside_scope(tmp_path: Path) -> None:
-    controller = AssistantController(
-        policy=PolicyEngine(allowed_roots=[tmp_path], mode=SessionMode.SUPERVISED),
-        audit_log=SessionAuditLog(tmp_path / "audit.json"),
-        tool_runner=ToolRunner(tmp_path / "memory.db"),
-    )
-    source = tmp_path / "notes.txt"
-    source.write_text("hello")
-    with pytest.raises(PermissionError):
-        controller.execute_tool(
-            "move_file",
-            {"src": str(source), "dest": str(tmp_path.parent / "notes.txt")},
-        )
-
-
 def test_stop_controller_uses_explicit_commands() -> None:
     controller = StopController()
     assert controller.inspect_input("copy text") is None
@@ -172,60 +157,6 @@ def test_grep_text_respects_match_limit(tmp_path: Path) -> None:
     assert len(matches) == 2
 
 
-def test_file_management_tools_round_trip(tmp_path: Path) -> None:
-    runner = ToolRunner(tmp_path / "memory.db")
-    source = tmp_path / "source.txt"
-    source.write_text("hello tools")
-
-    copy_result = runner.copy_file(str(source), str(tmp_path / "copied.txt"))
-    assert "copied" in copy_result
-    assert (tmp_path / "copied.txt").read_text() == "hello tools"
-
-    move_result = runner.move_file(str(source), str(tmp_path / "moved.txt"))
-    assert "moved" in move_result
-    assert not source.exists()
-    assert (tmp_path / "moved.txt").read_text() == "hello tools"
-
-    rename_result = runner.rename_file(str(tmp_path / "moved.txt"), "renamed.txt")
-    assert "renamed" in rename_result
-    assert (tmp_path / "renamed.txt").read_text() == "hello tools"
-
-    delete_result = runner.delete_file_safe(str(tmp_path / "renamed.txt"))
-    assert "deleted file" in delete_result
-    assert not (tmp_path / "renamed.txt").exists()
-
-
-def test_organize_directory_supports_preview_and_apply(tmp_path: Path) -> None:
-    runner = ToolRunner(tmp_path.parent / "memory.db")
-    pdf = tmp_path / "report.pdf"
-    txt = tmp_path / "notes.txt"
-    pdf.write_text("pdf")
-    txt.write_text("txt")
-
-    preview = runner.organize_directory(str(tmp_path), dry_run=True)
-    assert preview["planned_moves"] == 2
-    assert pdf.exists()
-    assert txt.exists()
-
-    applied = runner.organize_directory(str(tmp_path), dry_run=False)
-    assert applied["planned_moves"] == 2
-    assert (tmp_path / "pdf" / "report.pdf").exists()
-    assert (tmp_path / "txt" / "notes.txt").exists()
-
-
-def test_organize_directory_defaults_to_downloads(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    downloads = tmp_path / "Downloads"
-    downloads.mkdir()
-    (downloads / "photo.png").write_text("png")
-    monkeypatch.setenv("HOME", str(tmp_path))
-    runner = ToolRunner(tmp_path / "memory.db")
-
-    result = runner.organize_directory()
-
-    assert result["path"] == str(downloads.resolve())
-    assert result["planned_moves"] == 1
-
-
 def test_memory_store_round_trip(tmp_path: Path) -> None:
     runner = ToolRunner(tmp_path / "memory.db")
     runner.save_memory(key="goal", content="finish rexbot", namespace="user")
@@ -285,53 +216,9 @@ def test_dashboard_service_exposes_manifest_and_tool_runner(tmp_path: Path) -> N
     )
     service = DashboardService(controller=controller)
     assert len(service.manifest()) == 17
-    assert service.dashboard_state()["chat_enabled"] is False
-    assert service.dashboard_state()["mode"] == "supervised"
-    assert service.dashboard_state()["approved_roots"] == [str(tmp_path.resolve())]
     assert service.system_info()["python"]
     result = service.run_tool("write_file", {"path": str(tmp_path / "dash.txt"), "content": "ok"})
     assert "wrote" in result
-
-
-def test_dashboard_chat_turn_returns_tool_events(tmp_path: Path) -> None:
-    controller = AssistantController(
-        policy=PolicyEngine(allowed_roots=[tmp_path], mode=SessionMode.SUPERVISED),
-        audit_log=SessionAuditLog(tmp_path / "audit.json"),
-        tool_runner=ToolRunner(tmp_path / "memory.db"),
-    )
-    target = tmp_path / "notes.txt"
-    target.write_text("hello dashboard")
-    stub = StubLlama3Client(
-        responses=[
-            Llama3Response(content="", tool_calls=[ToolCall("read_file", {"path": str(target)})]),
-            Llama3Response(content="done", tool_calls=[]),
-        ],
-        reviews=[ReviewDecision(approved=True, content="CONFIRM on-task")],
-    )
-    service = DashboardService(controller=controller, client=stub)
-
-    result = service.chat_turn("read the file")
-
-    assert result["ok"] is True
-    assert result["reply"] == "done"
-    assert [event["event"] for event in result["tool_events"]] == [
-        "tool_reviewed",
-        "tool_requested",
-        "tool_completed",
-    ]
-
-
-def test_dashboard_chat_turn_rejects_empty_message(tmp_path: Path) -> None:
-    controller = AssistantController(
-        policy=PolicyEngine(allowed_roots=[tmp_path], mode=SessionMode.SUPERVISED),
-        audit_log=SessionAuditLog(tmp_path / "audit.json"),
-        tool_runner=ToolRunner(tmp_path / "memory.db"),
-    )
-    service = DashboardService(controller=controller)
-
-    result = service.chat_turn("   ")
-
-    assert result == {"ok": False, "error": "Please enter a request before sending."}
 
 
 def test_registry_contains_expanded_tool_set(tmp_path: Path) -> None:
@@ -339,11 +226,6 @@ def test_registry_contains_expanded_tool_set(tmp_path: Path) -> None:
     for tool_name in {
         "append_file",
         "make_dir",
-        "move_file",
-        "copy_file",
-        "rename_file",
-        "delete_file_safe",
-        "organize_directory",
         "file_info",
         "directory_tree",
         "glob_search",

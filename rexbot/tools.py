@@ -5,7 +5,6 @@ import json
 import os
 import platform
 import re
-import shutil
 import sqlite3
 from collections import deque
 from dataclasses import dataclass
@@ -235,48 +234,6 @@ class ToolRunner:
         target.mkdir(parents=True, exist_ok=True)
         return f"created directory {target}"
 
-    def move_file(self, src: str, dest: str, overwrite: bool = False) -> str:
-        source = Path(src).expanduser().resolve()
-        destination = Path(dest).expanduser().resolve()
-        self._ensure_source_exists(source)
-        self._ensure_destination_available(destination, overwrite)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(source), str(destination))
-        return f"moved {source} to {destination}"
-
-    def copy_file(self, src: str, dest: str, overwrite: bool = False) -> str:
-        source = Path(src).expanduser().resolve()
-        destination = Path(dest).expanduser().resolve()
-        self._ensure_source_exists(source)
-        self._ensure_destination_available(destination, overwrite)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, destination)
-        return f"copied {source} to {destination}"
-
-    def rename_file(self, path: str, new_name: str, overwrite: bool = False) -> str:
-        target = Path(path).expanduser().resolve()
-        self._ensure_source_exists(target)
-        if Path(new_name).name != new_name:
-            raise ValueError("new_name must be a bare file or folder name, not a path.")
-        destination = target.with_name(new_name)
-        self._ensure_destination_available(destination, overwrite)
-        target.rename(destination)
-        return f"renamed {target} to {destination}"
-
-    def delete_file_safe(self, path: str, missing_ok: bool = False) -> str:
-        target = Path(path).expanduser().resolve()
-        if not target.exists():
-            if missing_ok:
-                return f"nothing to delete at {target}"
-            raise FileNotFoundError(f"{target} does not exist")
-        if target.is_dir():
-            if any(target.iterdir()):
-                raise ValueError("delete_file_safe only removes files or empty directories.")
-            target.rmdir()
-            return f"deleted empty directory {target}"
-        target.unlink()
-        return f"deleted file {target}"
-
     def file_info(self, path: str) -> dict[str, Any]:
         target = Path(path).expanduser().resolve()
         stat = target.stat()
@@ -309,42 +266,6 @@ class ToolRunner:
                 children = sorted(current.iterdir(), key=lambda item: item.name)[:max_entries]
                 queue.extend((child, depth + 1) for child in children)
         return results
-
-    def organize_directory(
-        self,
-        path: str = "~/Downloads",
-        strategy: str = "extension",
-        dry_run: bool = True,
-        limit: int = DEFAULT_GLOB_LIMIT,
-    ) -> dict[str, Any]:
-        root = Path(path or "~/Downloads").expanduser().resolve()
-        if strategy != "extension":
-            raise ValueError("Only the 'extension' organization strategy is currently supported.")
-        bounded = max(1, min(limit, DEFAULT_GLOB_LIMIT))
-        plan: list[dict[str, str]] = []
-        for child in sorted(root.iterdir(), key=lambda item: item.name.lower()):
-            if not child.is_file():
-                continue
-            folder_name = self._extension_bucket(child)
-            destination = root / folder_name / child.name
-            if child == destination:
-                continue
-            plan.append({"source": str(child), "destination": str(destination), "category": folder_name})
-            if len(plan) >= bounded:
-                break
-
-        if not dry_run:
-            for item in plan:
-                destination = Path(item["destination"])
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.move(item["source"], item["destination"])
-        return {
-            "path": str(root),
-            "strategy": strategy,
-            "dry_run": dry_run,
-            "planned_moves": len(plan),
-            "moves": plan,
-        }
 
     def glob_search(self, path: str, pattern: str, limit: int = DEFAULT_GLOB_LIMIT) -> list[str]:
         root = Path(path).expanduser().resolve()
@@ -536,11 +457,6 @@ class ToolRunner:
                 "read_file",
                 "write_file",
                 "append_file",
-                "move_file",
-                "copy_file",
-                "rename_file",
-                "delete_file_safe",
-                "organize_directory",
                 "file_info",
                 "directory_tree",
                 "glob_search",
@@ -616,11 +532,6 @@ class ToolRunner:
             ("write_file", "Write UTF-8 text content to an approved file path.", {"path": "File path to write.", "content": "Text content to save."}, ["path", "content"]),
             ("append_file", "Append UTF-8 text content to an approved file path.", {"path": "File path to append to.", "content": "Text content to append."}, ["path", "content"]),
             ("make_dir", "Create a directory inside an approved path.", {"path": "Directory path to create."}, ["path"]),
-            ("move_file", "Move a file or folder between approved paths.", {"src": "Source path to move.", "dest": "Destination path to move to.", "overwrite": "Whether an existing destination can be replaced."}, ["src", "dest"]),
-            ("copy_file", "Copy a file between approved paths.", {"src": "Source path to copy.", "dest": "Destination path to copy to.", "overwrite": "Whether an existing destination can be replaced."}, ["src", "dest"]),
-            ("rename_file", "Rename a file or directory within its current parent folder.", {"path": "Existing path to rename.", "new_name": "New filename or folder name only.", "overwrite": "Whether an existing sibling with the new name can be replaced."}, ["path", "new_name"]),
-            ("delete_file_safe", "Delete a file or an empty directory inside approved scope.", {"path": "Path to delete.", "missing_ok": "Whether deleting a missing path should be treated as success."}, ["path"]),
-            ("organize_directory", "Plan or apply a simple directory organization workflow by file extension. If no path is provided, Rexbot uses ~/Downloads.", {"path": "Directory to organize. Defaults to ~/Downloads when omitted.", "strategy": "Organization strategy; currently only extension.", "dry_run": "Preview moves without applying them.", "limit": "Maximum files to include in the plan."}, []),
             ("file_info", "Return metadata for a file or directory inside approved scope.", {"path": "Path to inspect."}, ["path"]),
             ("directory_tree", "Return a bounded shallow directory tree for an approved path.", {"path": "Root path to inspect.", "max_depth": "Depth limit.", "max_entries": "Maximum lines to return."}, ["path"]),
             ("glob_search", "Search for matching filenames under an approved path with a bounded result set.", {"path": "Root path to search.", "pattern": "Filename glob such as *.py or *.md.", "limit": "Maximum matches to return."}, ["path", "pattern"]),
@@ -671,8 +582,8 @@ class ToolRunner:
             }
             for numeric_key in {"limit", "max_chars", "max_depth", "max_entries", "max_matches", "max_chars_per_file", "max_steps"} & properties.keys():
                 schema_properties[numeric_key]["type"] = "integer"
-            for boolean_key in {"enabled", "overwrite", "missing_ok", "dry_run"} & schema_properties.keys():
-                schema_properties[boolean_key]["type"] = "boolean"
+            if "enabled" in schema_properties:
+                schema_properties["enabled"]["type"] = "boolean"
             registry[name] = ToolDefinition(
                 name=name,
                 description=description,
@@ -688,21 +599,3 @@ class ToolRunner:
         bounded = max(256, min(max_chars, DEFAULT_TEXT_LIMIT))
         with path.open("r", encoding="utf-8", errors="replace") as handle:
             return handle.read(bounded)
-
-    def _ensure_source_exists(self, path: Path) -> None:
-        if not path.exists():
-            raise FileNotFoundError(f"{path} does not exist")
-
-    def _ensure_destination_available(self, path: Path, overwrite: bool) -> None:
-        if not path.exists():
-            return
-        if not overwrite:
-            raise FileExistsError(f"{path} already exists")
-        if path.is_dir():
-            shutil.rmtree(path)
-            return
-        path.unlink()
-
-    def _extension_bucket(self, path: Path) -> str:
-        suffix = path.suffix.lower().lstrip(".")
-        return suffix or "no_extension"

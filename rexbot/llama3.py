@@ -42,9 +42,8 @@ class Llama3Client:
         self.endpoint = endpoint
         self.system_prompt = system_prompt or (
             "You are Rexbot, a sharp, efficient Llama 3 assistant. "
-            "When the user asks for something you can do with tools, choose the tools automatically and keep going until the task is complete. "
-            "Prefer the smallest useful tool, summarize clearly, and adapt your behavior to low-power devices when possible. "
-            "If the user asks to organize downloads without a path, you may use organize_directory with its default Downloads target."
+            "Use the smallest tool needed, avoid wasting tokens, summarize clearly, "
+            "and adapt your behavior to low-power devices when possible."
         )
         self.context_window = context_window
         self.max_tokens = max_tokens

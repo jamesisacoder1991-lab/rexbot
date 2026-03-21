@@ -13,26 +13,18 @@ from .tools import ToolDefinition, ToolRunner
 
 ApprovalCallback = Callable[[str, dict[str, Any], PolicyDecision], bool]
 PATH_ARGUMENT_TOOLS = {
-    "list_dir": ("path",),
-    "read_file": ("path",),
-    "write_file": ("path",),
-    "append_file": ("path",),
-    "make_dir": ("path",),
-    "move_file": ("src", "dest"),
-    "copy_file": ("src", "dest"),
-    "rename_file": ("path",),
-    "delete_file_safe": ("path",),
-    "organize_directory": ("path",),
-    "file_info": ("path",),
-    "directory_tree": ("path",),
-    "glob_search": ("path",),
-    "grep_text": ("path",),
-    "add_knowledge": ("path",),
+    "list_dir": "path",
+    "read_file": "path",
+    "write_file": "path",
+    "append_file": "path",
+    "make_dir": "path",
+    "file_info": "path",
+    "directory_tree": "path",
+    "glob_search": "path",
+    "grep_text": "path",
+    "add_knowledge": "path",
 }
 NETWORK_ARGUMENT_TOOLS = {"fetch_url": "url"}
-DEFAULT_PATH_ARGUMENTS = {
-    ("organize_directory", "path"): "~/Downloads",
-}
 
 
 class KillSwitchTriggered(RuntimeError):
@@ -107,14 +99,13 @@ class AssistantController:
         if tool_name not in self.tool_registry:
             raise PermissionError(f"Unknown tool requested: {tool_name}")
 
-        normalized_targets = self._normalize_targets(tool_name, arguments)
-        decision = self._evaluate_targets(tool_name, normalized_targets)
+        normalized_target = self._normalize_target(tool_name, arguments)
+        decision = self.policy.evaluate(Action(kind=tool_name, target=normalized_target))
         self.audit_log.record(
             "tool_requested",
             tool=tool_name,
             arguments=arguments,
-            target=normalized_targets[0],
-            targets=normalized_targets,
+            target=normalized_target,
             decision=decision.reason,
             needs_confirmation=decision.needs_confirmation,
             allowed=decision.allowed,
@@ -122,7 +113,7 @@ class AssistantController:
         self._enforce(tool_name, arguments, decision, approval_callback)
 
         result = self.tool_registry[tool_name].handler(**arguments)
-        self.audit_log.record("tool_completed", tool=tool_name, targets=normalized_targets)
+        self.audit_log.record("tool_completed", tool=tool_name, target=normalized_target)
         return result
 
     def run_llama3_turn(
@@ -187,33 +178,15 @@ class AssistantController:
     ) -> ReviewDecision:
         return client.review_plan(transcript, tool_call.name, tool_call.arguments)
 
-    def _normalize_targets(self, tool_name: str, arguments: dict[str, Any]) -> list[str]:
+    def _normalize_target(self, tool_name: str, arguments: dict[str, Any]) -> str:
         if tool_name in NETWORK_ARGUMENT_TOOLS:
             raw = str(arguments.get(NETWORK_ARGUMENT_TOOLS[tool_name], ""))
             parsed = urlparse(raw if "://" in raw else f"https://{raw}")
-            return [parsed.netloc or parsed.path]
+            return parsed.netloc or parsed.path
         if tool_name in PATH_ARGUMENT_TOOLS:
-            return [
-                str(
-                    Path(
-                        str(arguments.get(key, DEFAULT_PATH_ARGUMENTS.get((tool_name, key), "")))
-                    ).expanduser().resolve()
-                )
-                for key in PATH_ARGUMENT_TOOLS[tool_name]
-            ]
-        return [tool_name]
-
-    def _evaluate_targets(self, tool_name: str, normalized_targets: list[str]) -> PolicyDecision:
-        decisions = [
-            self.policy.evaluate(Action(kind=tool_name, target=target))
-            for target in normalized_targets
-        ]
-        if any(not decision.allowed for decision in decisions):
-            blocked = next(decision for decision in decisions if not decision.allowed)
-            return blocked
-        if any(decision.needs_confirmation for decision in decisions):
-            return PolicyDecision(True, True, "Safe mode requires explicit confirmation.")
-        return PolicyDecision(True, False, "All requested targets are inside approved scope.")
+            key = PATH_ARGUMENT_TOOLS[tool_name]
+            return str(Path(str(arguments.get(key, ""))).expanduser().resolve())
+        return tool_name
 
     def _enforce(
         self,

@@ -34,8 +34,6 @@ Rexbot is intentionally designed to stay:
 ### Working features already included
 
 - file inspection and editing inside approved roots,
-- file move/copy/rename/delete workflows inside approved roots,
-- directory organization previews and extension-based auto-sorting,
 - local file search and directory-tree views,
 - bounded web fetching for approved domains,
 - SQLite-backed long-term memory,
@@ -113,11 +111,6 @@ Rexbot exposes these tools to Llama 3.
 - `write_file`
 - `append_file`
 - `make_dir`
-- `move_file`
-- `copy_file`
-- `rename_file`
-- `delete_file_safe`
-- `organize_directory`
 - `file_info`
 - `directory_tree`
 - `glob_search`
@@ -304,13 +297,13 @@ python -m rexbot.cli chat \
 
 ## Web dashboard UI
 
-Rexbot includes a lightweight built-in web dashboard with a simplified neon UI focused on natural-language requests.
+Rexbot includes a lightweight built-in web dashboard with a techy control-deck style UI.
 
 Start it with:
 
 ```bash
 python -m rexbot.webapp \
-  --root ~/Downloads \
+  --root . \
   --supervised \
   --enable-chat
 ```
@@ -323,20 +316,10 @@ http://127.0.0.1:8000
 
 The dashboard includes:
 
-- a primary chat surface where Rexbot chooses tools automatically,
-- recent auto-selected tool activity so you can see what happened,
-- a visible session/approved-roots panel so test setup is obvious,
-- a compact manifest/status sidebar,
-- an advanced manual tool runner when you want direct control,
+- a roadmap manifest panel,
+- a tool runner,
+- a chat console,
 - and system info/status cards.
-
-If you start the dashboard with `--root ~/Downloads`, you can ask things like:
-
-```text
-Organize my downloads by file type
-```
-
-and Rexbot can use `organize_directory` without needing you to type the path explicitly.
 
 ---
 

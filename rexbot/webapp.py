@@ -36,41 +36,19 @@ class DashboardService:
     def system_info(self) -> dict[str, Any]:
         return self.controller.tool_runner.system_info()
 
-    def dashboard_state(self) -> dict[str, Any]:
-        return {
-            "chat_enabled": self.client is not None,
-            "mode": self.controller.policy.mode.value,
-            "approved_roots": [str(root) for root in self.controller.policy.allowed_roots],
-            "example_prompts": [
-                "Organize my downloads by file type.",
-                "Preview how you'd organize my downloads.",
-                "List the biggest text files in this folder.",
-                "Read README and summarize the setup steps.",
-            ],
-        }
-
     def run_tool(self, tool_name: str, arguments: dict[str, Any]) -> Any:
         return self.controller.execute_tool(tool_name, arguments)
 
     def chat_turn(self, message: str) -> dict[str, Any]:
-        normalized_message = message.strip()
-        if not normalized_message:
-            return {"ok": False, "error": "Please enter a request before sending."}
         if self.client is None:
             return {
                 "ok": False,
                 "error": "No Ollama/Llama 3 client configured for chat.",
             }
-        before = len(self.controller.audit_log.entries)
-        self.chat_messages.append({"role": "user", "content": normalized_message})
+        self.chat_messages.append({"role": "user", "content": message})
         reply = self.controller.run_llama3_turn(self.client, self.chat_messages)
         self.chat_messages.append({"role": "assistant", "content": reply})
-        tool_events = [
-            entry
-            for entry in self.controller.audit_log.entries[before:]
-            if entry.get("event") in {"tool_requested", "tool_reviewed", "tool_completed"}
-        ]
-        return {"ok": True, "reply": reply, "messages": self.chat_messages, "tool_events": tool_events}
+        return {"ok": True, "reply": reply, "messages": self.chat_messages}
 
     def reset_chat(self) -> dict[str, Any]:
         self.chat_messages.clear()
@@ -120,7 +98,6 @@ def make_handler(service: DashboardService) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802
             routes = {
-                "/api/dashboard-state": service.dashboard_state,
                 "/api/manifest": service.manifest,
                 "/api/tools": service.tools,
                 "/api/system-info": service.system_info,

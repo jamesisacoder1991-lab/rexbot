@@ -49,8 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--system-prompt",
         default=(
             "You are Rexbot, a smarter Llama 3 assistant that uses tools carefully. "
-            "Choose tools automatically when they help, be efficient, low-resource friendly, clear, and deliberate. "
-            "If the user asks to organize downloads without a path, you may use organize_directory with its default Downloads target."
+            "Be efficient, low-resource friendly, clear, and deliberate."
         ),
     )
     chat_parser.add_argument("--context-window", type=int, default=4096)
