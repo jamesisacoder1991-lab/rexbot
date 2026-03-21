@@ -161,6 +161,12 @@ h2 {
   padding: 20px;
 }
 
+.inner-panel {
+  padding: 16px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
 .sidebar-stack {
   display: grid;
   gap: 20px;
@@ -185,6 +191,34 @@ h2 {
   background: rgba(105, 226, 255, 0.08);
   border: 1px solid rgba(105, 226, 255, 0.16);
   color: var(--text);
+}
+
+.tester-panel {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tester-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.root-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.root-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.82rem;
+  word-break: break-all;
 }
 
 .prompt-chips {
@@ -217,6 +251,22 @@ h2 {
 .chat-log {
   display: grid;
   gap: 12px;
+}
+
+.empty-chat {
+  display: block;
+}
+
+.empty-chat-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.09);
+}
+
+.empty-chat-card p {
+  margin-top: 6px;
+  color: var(--muted);
 }
 
 .chat-entry {
@@ -268,6 +318,12 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(3, 7, 17, 0.85);
   color: var(--text);
+}
+
+textarea:disabled,
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 textarea {
@@ -402,6 +458,7 @@ textarea {
   }
 
   .hero-side,
+  .tester-grid,
   .composer-actions,
   .tool-actions {
     grid-template-columns: 1fr;

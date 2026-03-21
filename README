@@ -325,6 +325,7 @@ The dashboard includes:
 
 - a primary chat surface where Rexbot chooses tools automatically,
 - recent auto-selected tool activity so you can see what happened,
+- a visible session/approved-roots panel so test setup is obvious,
 - a compact manifest/status sidebar,
 - an advanced manual tool runner when you want direct control,
 - and system info/status cards.

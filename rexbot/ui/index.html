@@ -52,13 +52,32 @@
             <button id="resetChat" type="button" class="ghost">Reset</button>
           </div>
 
-          <div id="chatHint" class="chat-hint">
-            Rexbot chat is loading…
-          </div>
+          <div id="chatHint" class="chat-hint">Rexbot chat is loading…</div>
+
+          <section class="panel tester-panel inner-panel">
+            <div class="tester-grid">
+              <div>
+                <span class="label">Session mode</span>
+                <strong id="modeValue">—</strong>
+              </div>
+              <div>
+                <span class="label">Approved roots</span>
+                <div id="approvedRoots" class="root-list">—</div>
+              </div>
+            </div>
+            <p class="helper-text">
+              Best testing setup: start the dashboard with <code>--root ~/Downloads --supervised --enable-chat</code>.
+            </p>
+          </section>
 
           <div id="promptChips" class="prompt-chips"></div>
 
-          <div id="chatLog" class="chat-log"></div>
+          <div id="chatLog" class="chat-log empty-chat">
+            <div class="empty-chat-card">
+              <strong>Ready to test</strong>
+              <p>Ask for a real task and Rexbot will choose the smallest useful tools automatically.</p>
+            </div>
+          </div>
 
           <form id="chatForm" class="composer">
             <textarea
@@ -67,8 +86,8 @@
               aria-label="Chat with Rexbot"
             ></textarea>
             <div class="composer-actions">
-              <p class="helper-text">Rexbot will automatically choose tools when chat is enabled.</p>
-              <button type="submit">Send</button>
+              <p id="helperText" class="helper-text">Rexbot will automatically choose tools when chat is enabled.</p>
+              <button id="sendButton" type="submit">Send</button>
             </div>
           </form>
         </section>
@@ -102,7 +121,7 @@
                 <p class="section-kicker">Advanced</p>
                 <h2>Manual tool runner</h2>
               </div>
-              <span>Open</span>
+              <span id="toolRunnerToggle">Open</span>
             </summary>
             <form id="toolForm" class="stacked-form">
               <label>
@@ -118,7 +137,7 @@
                 <button type="submit">Run tool</button>
               </div>
             </form>
-            <pre id="toolOutput" class="output"></pre>
+            <pre id="toolOutput" class="output">Select a tool, add JSON arguments if needed, and run it here.</pre>
           </details>
         </aside>
       </section>

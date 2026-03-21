@@ -286,6 +286,8 @@ def test_dashboard_service_exposes_manifest_and_tool_runner(tmp_path: Path) -> N
     service = DashboardService(controller=controller)
     assert len(service.manifest()) == 17
     assert service.dashboard_state()["chat_enabled"] is False
+    assert service.dashboard_state()["mode"] == "supervised"
+    assert service.dashboard_state()["approved_roots"] == [str(tmp_path.resolve())]
     assert service.system_info()["python"]
     result = service.run_tool("write_file", {"path": str(tmp_path / "dash.txt"), "content": "ok"})
     assert "wrote" in result
@@ -317,6 +319,19 @@ def test_dashboard_chat_turn_returns_tool_events(tmp_path: Path) -> None:
         "tool_requested",
         "tool_completed",
     ]
+
+
+def test_dashboard_chat_turn_rejects_empty_message(tmp_path: Path) -> None:
+    controller = AssistantController(
+        policy=PolicyEngine(allowed_roots=[tmp_path], mode=SessionMode.SUPERVISED),
+        audit_log=SessionAuditLog(tmp_path / "audit.json"),
+        tool_runner=ToolRunner(tmp_path / "memory.db"),
+    )
+    service = DashboardService(controller=controller)
+
+    result = service.chat_turn("   ")
+
+    assert result == {"ok": False, "error": "Please enter a request before sending."}
 
 
 def test_registry_contains_expanded_tool_set(tmp_path: Path) -> None:
